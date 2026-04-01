@@ -44,6 +44,3 @@ To ensure the code runs properly, please install the following essential librari
 - sklearn
 - matplotlib
 
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for more details.
