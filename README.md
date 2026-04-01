@@ -15,8 +15,8 @@ The code includes the following key modules:
 This repository implements a framework for geochemical anomaly recognition using graph-based self-supervised learning models. The key modules are:
 
 - **Create_Graph.py**: Constructs the geochemical graph.
-- **Create_Graph_Weight.py**: Builds the geochemical graph with edge weights.
-- **Distance_Encoding_Calculation.py**: Encodes the topological distances between nodes in the graph.
+- **Weighted_Graph.py**: Builds the geochemical graph with edge weights.
+- **DE_Calculation.py**: Encodes the topological distances between nodes in the graph.
 - **Loss.py**: Implements the contrastive loss function for self-supervised learning.
 - **Base_GCN_SSL.py**: Implements the base structure for the graph self-supervised learning model.
 - **Weighted_GCN_SSL.py**: Enhances the self-supervised learning model by incorporating edge weights into the GCN.
