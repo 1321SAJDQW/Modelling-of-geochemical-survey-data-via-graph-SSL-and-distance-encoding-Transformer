@@ -179,6 +179,17 @@ print("Max label:", label1.max())
 selected_labels = labels[trainIndex].cpu().numpy()
 print(f"Unique values in labels[trainIndex]: {np.unique(selected_labels)}")
 
+Classifier = nn.Sequential(
+    nn.Linear(emb.shape[1], 128),
+    nn.ReLU(),
+    nn.Linear(128, 64),
+    nn.ReLU(),
+    nn.Linear(64, 2),
+    nn.LogSoftmax(dim=1)
+).to(device)
+
+optimizer_classifier = torch.optim.Adam(Classifier.parameters(), lr=0.001, weight_decay=0.01)
+
 for i in range(100):
     optimizer_classifier.zero_grad()
     y_pred = Classifier(emb)
@@ -203,72 +214,72 @@ data.to_csv('Base_GCN_SSL.csv', index=False)
 # Leave-One-Out Cross-Validation Implementation
 # ----------------------------------------------------------------------------------------------------------------------
 
-y_true_all = []
-y_pred_prob_all = []
-y_pred_class_all = []
+# y_true_all = []
+# y_pred_prob_all = []
+# y_pred_class_all = []
 
-for i in range(len(positiveIndex)):
-    test_pos_idx = np.array([positiveIndex[i]])
-    train_pos_idx = np.delete(positiveIndex, i)
+# for i in range(len(positiveIndex)):
+#     test_pos_idx = np.array([positiveIndex[i]])
+#     train_pos_idx = np.delete(positiveIndex, i)
 
-    test_neg_idx = np.array([negativeIndex[i % len(negativeIndex)]])
-    train_neg_idx = np.delete(negativeIndex, i % len(negativeIndex))
+#     test_neg_idx = np.array([negativeIndex[i % len(negativeIndex)]])
+#     train_neg_idx = np.delete(negativeIndex, i % len(negativeIndex))
 
-    cv_train_idx = np.concatenate([train_pos_idx, train_neg_idx])
-    cv_test_idx = np.concatenate([test_pos_idx, test_neg_idx])
+#     cv_train_idx = np.concatenate([train_pos_idx, train_neg_idx])
+#     cv_test_idx = np.concatenate([test_pos_idx, test_neg_idx])
 
-    cv_classifier = Linear_Classifier(args.emb_size, 2).to(device)
-    cv_optimizer = torch.optim.Adam(cv_classifier.parameters(), lr=0.001, weight_decay=0.01)
+#     cv_classifier = Linear_Classifier(args.emb_size, 2).to(device)
+#     cv_optimizer = torch.optim.Adam(cv_classifier.parameters(), lr=0.001, weight_decay=0.01)
 
-    for epoch in range(100):
-        cv_classifier.train()
-        cv_optimizer.zero_grad()
-        cv_out = cv_classifier(emb.detach())
-        cv_loss = F.nll_loss(cv_out[cv_train_idx], labels[cv_train_idx])
-        cv_loss.backward()
-        cv_optimizer.step()
+#     for epoch in range(100):
+#         cv_classifier.train()
+#         cv_optimizer.zero_grad()
+#         cv_out = cv_classifier(emb.detach())
+#         cv_loss = F.nll_loss(cv_out[cv_train_idx], labels[cv_train_idx])
+#         cv_loss.backward()
+#         cv_optimizer.step()
 
-    cv_classifier.eval()
-    with torch.no_grad():
-        cv_test_out = cv_classifier(emb.detach())
-        cv_prob = torch.exp(cv_test_out)
+#     cv_classifier.eval()
+#     with torch.no_grad():
+#         cv_test_out = cv_classifier(emb.detach())
+#         cv_prob = torch.exp(cv_test_out)
 
-        y_true_all.extend(label1[cv_test_idx])
-        y_pred_prob_all.extend(cv_prob[cv_test_idx, 1].cpu().numpy())
-        y_pred_class_all.extend(cv_prob[cv_test_idx].argmax(dim=1).cpu().numpy())
+#         y_true_all.extend(label1[cv_test_idx])
+#         y_pred_prob_all.extend(cv_prob[cv_test_idx, 1].cpu().numpy())
+#         y_pred_class_all.extend(cv_prob[cv_test_idx].argmax(dim=1).cpu().numpy())
 
-precision = precision_score(y_true_all, y_pred_class_all, zero_division=0)
-recall = recall_score(y_true_all, y_pred_class_all, zero_division=0)
-f1 = f1_score(y_true_all, y_pred_class_all, zero_division=0)
-auc = roc_auc_score(y_true_all, y_pred_prob_all)
-acc = accuracy_score(y_true_all, y_pred_class_all)
-kappa = cohen_kappa_score(y_true_all, y_pred_class_all)
-mcc = matthews_corrcoef(y_true_all, y_pred_class_all)
+# precision = precision_score(y_true_all, y_pred_class_all, zero_division=0)
+# recall = recall_score(y_true_all, y_pred_class_all, zero_division=0)
+# f1 = f1_score(y_true_all, y_pred_class_all, zero_division=0)
+# auc = roc_auc_score(y_true_all, y_pred_prob_all)
+# acc = accuracy_score(y_true_all, y_pred_class_all)
+# kappa = cohen_kappa_score(y_true_all, y_pred_class_all)
+# mcc = matthews_corrcoef(y_true_all, y_pred_class_all)
 
-# ----------------------------------------------------------------------------------------------------------------------
-# Output Results
-# ----------------------------------------------------------------------------------------------------------------------
+# # ----------------------------------------------------------------------------------------------------------------------
+# # Output Results
+# # ----------------------------------------------------------------------------------------------------------------------
 
-pos_probs = [y_pred_prob_all[i] for i in range(0, len(y_pred_prob_all), 2)]
-pos_preds = [y_pred_class_all[i] for i in range(0, len(y_pred_class_all), 2)]
+# pos_probs = [y_pred_prob_all[i] for i in range(0, len(y_pred_prob_all), 2)]
+# pos_preds = [y_pred_class_all[i] for i in range(0, len(y_pred_class_all), 2)]
 
-print("\n" + "="*60)
-print(f"{'Sample_ID':<15} | {'True_Label':<12} | {'Pred_Class':<10} | {'Probability':<12}")
-print("-" * 60)
-for i, prob in enumerate(pos_probs):
-    sample_id = f"Deposit_{i+1}"
-    print(f"{sample_id:<15} | {1:<12} | {pos_preds[i]:<10} | {prob:.4f}")
+# print("\n" + "="*60)
+# print(f"{'Sample_ID':<15} | {'True_Label':<12} | {'Pred_Class':<10} | {'Probability':<12}")
+# print("-" * 60)
+# for i, prob in enumerate(pos_probs):
+#     sample_id = f"Deposit_{i+1}"
+#     print(f"{sample_id:<15} | {1:<12} | {pos_preds[i]:<10} | {prob:.4f}")
 
-print("\n" + "="*60)
-print("LOOCV Evaluation Metrics")
-print("-" * 60)
-metrics = {
-    'Precision': precision, 'Recall': recall, 'F1-Score': f1,
-    'AUC': auc, 'ACC': acc, 'Kappa': kappa, 'MCC': mcc
-}
-for name, value in metrics.items():
-    print(f"{name:<15}: {value:.4f}")
-print("="*60 + "\n")
+# print("\n" + "="*60)
+# print("LOOCV Evaluation Metrics")
+# print("-" * 60)
+# metrics = {
+#     'Precision': precision, 'Recall': recall, 'F1-Score': f1,
+#     'AUC': auc, 'ACC': acc, 'Kappa': kappa, 'MCC': mcc
+# }
+# for name, value in metrics.items():
+#     print(f"{name:<15}: {value:.4f}")
+# print("="*60 + "\n")
 
-pd.DataFrame({'Sample': [f'Deposit_{i+1}' for i in range(len(pos_probs))], 'Prob': pos_probs}).to_csv('Sample_Base_GCN_SSL.csv', index=False)
-pd.DataFrame({'Metric': list(metrics.keys()), 'Score': list(metrics.values())}).to_csv('Metric_Base_GCN_SSL.csv', index=False)
+# pd.DataFrame({'Sample': [f'Deposit_{i+1}' for i in range(len(pos_probs))], 'Prob': pos_probs}).to_csv('Sample_Base_GCN_SSL.csv', index=False)
+# pd.DataFrame({'Metric': list(metrics.keys()), 'Score': list(metrics.values())}).to_csv('Metric_Base_GCN_SSL.csv', index=False)
