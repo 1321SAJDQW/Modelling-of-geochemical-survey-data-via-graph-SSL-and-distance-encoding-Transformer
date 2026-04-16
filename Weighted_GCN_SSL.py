@@ -180,6 +180,17 @@ print("Max label:", label1.max())
 selected_labels = labels[trainIndex].cpu().numpy()
 print(f"Unique values in labels[trainIndex]: {np.unique(selected_labels)}")
 
+Classifier = nn.Sequential(
+    nn.Linear(emb.shape[1], 128),
+    nn.ReLU(),
+    nn.Linear(128, 64),
+    nn.ReLU(),
+    nn.Linear(64, 2),
+    nn.LogSoftmax(dim=1)
+).to(device)
+
+optimizer_classifier = torch.optim.Adam(Classifier.parameters(), lr=0.001, weight_decay=0.01)
+
 for i in range(100):
     optimizer_classifier.zero_grad()
     y_pred = Classifier(emb)
@@ -207,57 +218,57 @@ data.to_csv('Weighted_GCN_SSL.csv', index=False)
 # Leave-One-Out Cross-Validation (LOOCV) Implementation
 # ----------------------------------------------------------------------------------------------------------------------
 
-y_true_pos = []
-y_pred_prob_pos = []
-y_pred_class_pos = []
+# y_true_pos = []
+# y_pred_prob_pos = []
+# y_pred_class_pos = []
 
-for i in range(len(positiveIndex)):
-    test_pos_idx = np.array([positiveIndex[i]])
-    train_pos_idx = np.delete(positiveIndex, i)
+# for i in range(len(positiveIndex)):
+#     test_pos_idx = np.array([positiveIndex[i]])
+#     train_pos_idx = np.delete(positiveIndex, i)
 
-    test_neg_idx = np.array([negativeIndex[i % len(negativeIndex)]])
-    train_neg_idx = np.delete(negativeIndex, i % len(negativeIndex))
+#     test_neg_idx = np.array([negativeIndex[i % len(negativeIndex)]])
+#     train_neg_idx = np.delete(negativeIndex, i % len(negativeIndex))
 
-    cv_train_idx = np.concatenate([train_pos_idx, train_neg_idx])
+#     cv_train_idx = np.concatenate([train_pos_idx, train_neg_idx])
 
-    cv_classifier = Linear_Classifier(args.emb_size, 2).to(device)
-    cv_optimizer = torch.optim.Adam(cv_classifier.parameters(), lr=0.001, weight_decay=0.01)
+#     cv_classifier = Linear_Classifier(args.emb_size, 2).to(device)
+#     cv_optimizer = torch.optim.Adam(cv_classifier.parameters(), lr=0.001, weight_decay=0.01)
 
-    for epoch in range(100):
-        cv_classifier.train()
-        cv_optimizer.zero_grad()
-        cv_out = cv_classifier(emb.detach())
-        cv_loss = F.nll_loss(cv_out[cv_train_idx], labels[cv_train_idx])
-        cv_loss.backward()
-        cv_optimizer.step()
+#     for epoch in range(100):
+#         cv_classifier.train()
+#         cv_optimizer.zero_grad()
+#         cv_out = cv_classifier(emb.detach())
+#         cv_loss = F.nll_loss(cv_out[cv_train_idx], labels[cv_train_idx])
+#         cv_loss.backward()
+#         cv_optimizer.step()
 
-    cv_classifier.eval()
-    with torch.no_grad():
-        cv_test_out = cv_classifier(emb.detach())
-        cv_prob = torch.exp(cv_test_out)
+#     cv_classifier.eval()
+#     with torch.no_grad():
+#         cv_test_out = cv_classifier(emb.detach())
+#         cv_prob = torch.exp(cv_test_out)
 
-        y_true_pos.extend(label1[test_pos_idx])
-        y_pred_prob_pos.extend(cv_prob[test_pos_idx, 1].cpu().numpy())
-        y_pred_class_pos.extend(cv_prob[test_pos_idx].argmax(dim=1).cpu().numpy())
+#         y_true_pos.extend(label1[test_pos_idx])
+#         y_pred_prob_pos.extend(cv_prob[test_pos_idx, 1].cpu().numpy())
+#         y_pred_class_pos.extend(cv_prob[test_pos_idx].argmax(dim=1).cpu().numpy())
 
-# ----------------------------------------------------------------------------------------------------------------------
-# Output Results (Positive Samples Only)
-# ----------------------------------------------------------------------------------------------------------------------
+# # ----------------------------------------------------------------------------------------------------------------------
+# # Output Results (Positive Samples Only)
+# # ----------------------------------------------------------------------------------------------------------------------
 
-print("\n" + "="*60)
-print(f"{'Sample_ID':<15} | {'True_Label':<12} | {'Pred_Class':<10} | {'Probability':<12}")
-print("-" * 60)
-for i, prob in enumerate(y_pred_prob_pos):
-    sample_id = f"Deposit_{i+1}"
-    print(f"{sample_id:<15} | {1:<12} | {y_pred_class_pos[i]:<10} | {prob:.4f}")
+# print("\n" + "="*60)
+# print(f"{'Sample_ID':<15} | {'True_Label':<12} | {'Pred_Class':<10} | {'Probability':<12}")
+# print("-" * 60)
+# for i, prob in enumerate(y_pred_prob_pos):
+#     sample_id = f"Deposit_{i+1}"
+#     print(f"{sample_id:<15} | {1:<12} | {y_pred_class_pos[i]:<10} | {prob:.4f}")
 
-print("\n" + "="*60)
-recall = sum(1 for pred in y_pred_class_pos if pred == 1) / len(y_pred_class_pos)
-mean_prob = sum(y_pred_prob_pos) / len(y_pred_prob_pos)
-print("Positive Samples Evaluation Metrics")
-print("-" * 60)
-print(f"{'Recall':<15}: {recall:.4f}")
-print(f"{'Mean Prob':<15}: {mean_prob:.4f}")
-print("="*60 + "\n")
+# print("\n" + "="*60)
+# recall = sum(1 for pred in y_pred_class_pos if pred == 1) / len(y_pred_class_pos)
+# mean_prob = sum(y_pred_prob_pos) / len(y_pred_prob_pos)
+# print("Positive Samples Evaluation Metrics")
+# print("-" * 60)
+# print(f"{'Recall':<15}: {recall:.4f}")
+# print(f"{'Mean Prob':<15}: {mean_prob:.4f}")
+# print("="*60 + "\n")
 
-pd.DataFrame({'Sample': [f'Deposit_{i+1}' for i in range(len(y_pred_prob_pos))], 'Prob': y_pred_prob_pos}).to_csv('Base_Weighted_SSL_11_Positive_Only.csv', index=False)
+# pd.DataFrame({'Sample': [f'Deposit_{i+1}' for i in range(len(y_pred_prob_pos))], 'Prob': y_pred_prob_pos}).to_csv('Base_Weighted_SSL_11_Positive_Only.csv', index=False)
